@@ -1,314 +1,206 @@
 from django.core.management.base import BaseCommand
-from pymongo import MongoClient, ASCENDING
-from datetime import datetime, timedelta
+from django.utils import timezone
+from datetime import timedelta
 import random
+from pymongo import MongoClient
+from octofit_tracker.models import User, Team, Activity, Leaderboard, Workout
 
 
 class Command(BaseCommand):
     help = 'Populate the octofit_db database with test data'
 
     def handle(self, *args, **options):
-        # Connect to MongoDB
-        client = MongoClient('localhost', 27017)
-        db = client['octofit_db']
-        
-        self.stdout.write(self.style.SUCCESS('Connected to MongoDB'))
-        
-        # Clear existing data
+        # Clear existing data directly via pymongo to avoid ORM issues with
+        # malformed documents that may have non-integer primary keys.
         self.stdout.write('Clearing existing data...')
-        db.users.delete_many({})
-        db.teams.delete_many({})
-        db.activities.delete_many({})
-        db.leaderboard.delete_many({})
-        db.workouts.delete_many({})
-        
-        # Create unique index on email field
-        self.stdout.write('Creating unique index on email field...')
-        db.users.create_index([("email", ASCENDING)], unique=True)
-        
-        # Insert Teams (Marvel and DC)
+        _client = MongoClient('localhost', 27017)
+        _db = _client['octofit_db']
+        for col in ['users', 'teams', 'activities', 'leaderboard', 'workouts']:
+            _db[col].delete_many({})
+        _client.close()
+
+        # Create Teams using Django ORM
         self.stdout.write('Inserting teams...')
-        teams_data = [
-            {
-                "_id": "team_marvel",
-                "name": "Team Marvel",
-                "description": "Earth's Mightiest Heroes",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "_id": "team_dc",
-                "name": "Team DC",
-                "description": "Justice League United",
-                "created_at": datetime.utcnow()
-            }
-        ]
-        db.teams.insert_many(teams_data)
-        self.stdout.write(self.style.SUCCESS(f'Inserted {len(teams_data)} teams'))
-        
-        # Insert Users (Superheroes)
+        Team.objects.create(
+            id=1,
+            name='Team Marvel',
+            description="Earth's Mightiest Heroes",
+        )
+        Team.objects.create(
+            id=2,
+            name='Team DC',
+            description='Justice League United',
+        )
+        # Re-fetch to get clean integer PKs (djongo can return ObjectId on save)
+        team_marvel = Team.objects.get(pk=1)
+        team_dc = Team.objects.get(pk=2)
+        self.stdout.write(self.style.SUCCESS('Inserted 2 teams'))
+
+        # Create Users using Django ORM
         self.stdout.write('Inserting users...')
-        users_data = [
+        users_info = [
             # Team Marvel
-            {
-                "name": "Tony Stark",
-                "email": "ironman@avengers.com",
-                "team_id": "team_marvel",
-                "avatar": "🦾",
-                "fitness_level": "advanced",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "name": "Steve Rogers",
-                "email": "captain@avengers.com",
-                "team_id": "team_marvel",
-                "avatar": "🛡️",
-                "fitness_level": "advanced",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "name": "Natasha Romanoff",
-                "email": "blackwidow@avengers.com",
-                "team_id": "team_marvel",
-                "avatar": "🕷️",
-                "fitness_level": "advanced",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "name": "Bruce Banner",
-                "email": "hulk@avengers.com",
-                "team_id": "team_marvel",
-                "avatar": "💚",
-                "fitness_level": "advanced",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "name": "Thor Odinson",
-                "email": "thor@asgard.com",
-                "team_id": "team_marvel",
-                "avatar": "⚡",
-                "fitness_level": "god-tier",
-                "created_at": datetime.utcnow()
-            },
+            (1, 'Tony Stark', 'ironman@avengers.com', team_marvel, '🦾', 'advanced'),
+            (2, 'Steve Rogers', 'captain@avengers.com', team_marvel, '🛡️', 'advanced'),
+            (3, 'Natasha Romanoff', 'blackwidow@avengers.com', team_marvel, '🕷️', 'advanced'),
+            (4, 'Bruce Banner', 'hulk@avengers.com', team_marvel, '💚', 'advanced'),
+            (5, 'Thor Odinson', 'thor@asgard.com', team_marvel, '⚡', 'god-tier'),
             # Team DC
-            {
-                "name": "Clark Kent",
-                "email": "superman@justiceleague.com",
-                "team_id": "team_dc",
-                "avatar": "🦸",
-                "fitness_level": "god-tier",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "name": "Bruce Wayne",
-                "email": "batman@gotham.com",
-                "team_id": "team_dc",
-                "avatar": "🦇",
-                "fitness_level": "advanced",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "name": "Diana Prince",
-                "email": "wonderwoman@themyscira.com",
-                "team_id": "team_dc",
-                "avatar": "⭐",
-                "fitness_level": "god-tier",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "name": "Barry Allen",
-                "email": "flash@speedforce.com",
-                "team_id": "team_dc",
-                "avatar": "⚡",
-                "fitness_level": "advanced",
-                "created_at": datetime.utcnow()
-            },
-            {
-                "name": "Arthur Curry",
-                "email": "aquaman@atlantis.com",
-                "team_id": "team_dc",
-                "avatar": "🔱",
-                "fitness_level": "advanced",
-                "created_at": datetime.utcnow()
-            }
+            (6, 'Clark Kent', 'superman@justiceleague.com', team_dc, '🦸', 'god-tier'),
+            (7, 'Bruce Wayne', 'batman@gotham.com', team_dc, '🦇', 'advanced'),
+            (8, 'Diana Prince', 'wonderwoman@themyscira.com', team_dc, '⭐', 'god-tier'),
+            (9, 'Barry Allen', 'flash@speedforce.com', team_dc, '⚡', 'advanced'),
+            (10, 'Arthur Curry', 'aquaman@atlantis.com', team_dc, '🔱', 'advanced'),
         ]
-        result = db.users.insert_many(users_data)
-        user_ids = result.inserted_ids
-        self.stdout.write(self.style.SUCCESS(f'Inserted {len(users_data)} users'))
-        
-        # Insert Activities
+
+        users = []
+        for uid, name, email, team, avatar, fitness_level in users_info:
+            User.objects.create(
+                id=uid,
+                name=name,
+                email=email,
+                team=team,
+                avatar=avatar,
+                fitness_level=fitness_level,
+            )
+        # Re-fetch users with clean integer PKs
+        users = list(User.objects.all().order_by('id'))
+        self.stdout.write(self.style.SUCCESS(f'Inserted {len(users)} users'))
+
+        # Create Activities using Django ORM
         self.stdout.write('Inserting activities...')
-        activities_data = []
         activity_types = ['running', 'cycling', 'swimming', 'strength_training', 'yoga']
-        
-        for i, user_id in enumerate(user_ids):
-            # Each user gets 5-10 random activities
+        activities_created = 0
+        activity_id = 1
+        for user in users:
             num_activities = random.randint(5, 10)
             for j in range(num_activities):
                 days_ago = random.randint(0, 30)
-                activity_date = datetime.utcnow() - timedelta(days=days_ago)
-                
-                activities_data.append({
-                    "user_id": user_id,
-                    "activity_type": random.choice(activity_types),
-                    "duration_minutes": random.randint(15, 120),
-                    "calories_burned": random.randint(100, 800),
-                    "distance_km": round(random.uniform(1.0, 20.0), 2),
-                    "date": activity_date,
-                    "notes": f"Great workout session #{j+1}"
-                })
-        
-        db.activities.insert_many(activities_data)
-        self.stdout.write(self.style.SUCCESS(f'Inserted {len(activities_data)} activities'))
-        
-        # Calculate and insert Leaderboard data
+                activity_date = timezone.now() - timedelta(days=days_ago)
+                Activity.objects.create(
+                    id=activity_id,
+                    user=user,
+                    activity_type=random.choice(activity_types),
+                    duration=random.randint(15, 120),
+                    date=activity_date,
+                    notes=f'Great workout session #{j + 1}',
+                )
+                activity_id += 1
+                activities_created += 1
+        self.stdout.write(self.style.SUCCESS(f'Inserted {activities_created} activities'))
+
+        # Create Leaderboard entries using Django ORM
         self.stdout.write('Calculating leaderboard...')
-        leaderboard_data = []
-        
-        for user_data in users_data:
-            user_email = user_data['email']
-            # Get user's _id from database
-            user_doc = db.users.find_one({"email": user_email})
-            user_id = user_doc['_id']
-            
-            # Calculate total stats for user
-            user_activities = list(db.activities.find({"user_id": user_id}))
-            total_calories = sum(a.get('calories_burned', 0) for a in user_activities)
-            total_distance = sum(a.get('distance_km', 0) for a in user_activities)
-            total_workouts = len(user_activities)
-            
-            leaderboard_data.append({
-                "user_id": user_id,
-                "user_name": user_data['name'],
-                "team_id": user_data['team_id'],
-                "total_calories": total_calories,
-                "total_distance_km": round(total_distance, 2),
-                "total_workouts": total_workouts,
-                "rank": 0,  # Will be calculated after sorting
-                "last_updated": datetime.utcnow()
-            })
-        
-        # Sort by total_calories and assign ranks
-        leaderboard_data.sort(key=lambda x: x['total_calories'], reverse=True)
-        for rank, entry in enumerate(leaderboard_data, start=1):
-            entry['rank'] = rank
-        
-        db.leaderboard.insert_many(leaderboard_data)
-        self.stdout.write(self.style.SUCCESS(f'Inserted {len(leaderboard_data)} leaderboard entries'))
-        
-        # Insert Workout suggestions
+        leaderboard_entries = []
+        for user in users:
+            total_duration = sum(
+                a.duration for a in Activity.objects.filter(user=user)
+            )
+            leaderboard_entries.append((user, total_duration))
+
+        # Sort by total duration descending and assign ranks
+        leaderboard_entries.sort(key=lambda x: x[1], reverse=True)
+        for rank, (user, score) in enumerate(leaderboard_entries, start=1):
+            Leaderboard.objects.create(id=rank, user=user, score=score, rank=rank)
+        self.stdout.write(self.style.SUCCESS(f'Inserted {len(leaderboard_entries)} leaderboard entries'))
+
+        # Create Workout suggestions using Django ORM
         self.stdout.write('Inserting workout suggestions...')
         workouts_data = [
             {
-                "name": "Super Soldier Circuit",
-                "description": "Captain America's legendary training routine",
-                "difficulty": "advanced",
-                "duration_minutes": 45,
-                "exercises": [
-                    {"name": "Push-ups", "reps": 50, "sets": 4},
-                    {"name": "Pull-ups", "reps": 20, "sets": 4},
-                    {"name": "Squats", "reps": 50, "sets": 4},
-                    {"name": "Burpees", "reps": 30, "sets": 3}
+                'name': 'Super Soldier Circuit',
+                'description': "Captain America's legendary training routine",
+                'difficulty': 'advanced',
+                'exercises': [
+                    {'name': 'Push-ups', 'reps': 50, 'sets': 4},
+                    {'name': 'Pull-ups', 'reps': 20, 'sets': 4},
+                    {'name': 'Squats', 'reps': 50, 'sets': 4},
+                    {'name': 'Burpees', 'reps': 30, 'sets': 3},
                 ],
-                "fitness_level": "advanced",
-                "category": "strength_training"
             },
             {
-                "name": "Speedster Sprint Training",
-                "description": "Barry Allen's speed-building workout",
-                "difficulty": "intermediate",
-                "duration_minutes": 30,
-                "exercises": [
-                    {"name": "Sprint Intervals", "duration": "30 sec", "sets": 10},
-                    {"name": "High Knees", "duration": "1 min", "sets": 5},
-                    {"name": "Mountain Climbers", "reps": 40, "sets": 4}
+                'name': 'Speedster Sprint Training',
+                'description': "Barry Allen's speed-building workout",
+                'difficulty': 'intermediate',
+                'exercises': [
+                    {'name': 'Sprint Intervals', 'duration': '30 sec', 'sets': 10},
+                    {'name': 'High Knees', 'duration': '1 min', 'sets': 5},
+                    {'name': 'Mountain Climbers', 'reps': 40, 'sets': 4},
                 ],
-                "fitness_level": "intermediate",
-                "category": "running"
             },
             {
-                "name": "Amazonian Warrior Training",
-                "description": "Wonder Woman's combat conditioning",
-                "difficulty": "advanced",
-                "duration_minutes": 60,
-                "exercises": [
-                    {"name": "Sword Swings (weighted)", "reps": 30, "sets": 5},
-                    {"name": "Shield Holds", "duration": "2 min", "sets": 3},
-                    {"name": "Battle Rope", "duration": "1 min", "sets": 5},
-                    {"name": "Box Jumps", "reps": 25, "sets": 4}
+                'name': 'Amazonian Warrior Training',
+                'description': "Wonder Woman's combat conditioning",
+                'difficulty': 'advanced',
+                'exercises': [
+                    {'name': 'Sword Swings (weighted)', 'reps': 30, 'sets': 5},
+                    {'name': 'Shield Holds', 'duration': '2 min', 'sets': 3},
+                    {'name': 'Battle Rope', 'duration': '1 min', 'sets': 5},
+                    {'name': 'Box Jumps', 'reps': 25, 'sets': 4},
                 ],
-                "fitness_level": "advanced",
-                "category": "strength_training"
             },
             {
-                "name": "Atlantean Swim Power",
-                "description": "Aquaman's underwater endurance training",
-                "difficulty": "intermediate",
-                "duration_minutes": 40,
-                "exercises": [
-                    {"name": "Freestyle Swimming", "distance": "1000m", "sets": 3},
-                    {"name": "Underwater Breath Hold", "duration": "2 min", "sets": 5},
-                    {"name": "Treading Water", "duration": "5 min", "sets": 3}
+                'name': 'Atlantean Swim Power',
+                'description': "Aquaman's underwater endurance training",
+                'difficulty': 'intermediate',
+                'exercises': [
+                    {'name': 'Freestyle Swimming', 'distance': '1000m', 'sets': 3},
+                    {'name': 'Underwater Breath Hold', 'duration': '2 min', 'sets': 5},
+                    {'name': 'Treading Water', 'duration': '5 min', 'sets': 3},
                 ],
-                "fitness_level": "intermediate",
-                "category": "swimming"
             },
             {
-                "name": "Zen Master Flow",
-                "description": "Black Widow's flexibility and balance routine",
-                "difficulty": "beginner",
-                "duration_minutes": 30,
-                "exercises": [
-                    {"name": "Sun Salutations", "reps": 10, "sets": 3},
-                    {"name": "Warrior Poses", "duration": "1 min each", "sets": 3},
-                    {"name": "Tree Pose", "duration": "1 min", "sets": 3},
-                    {"name": "Cobra Stretch", "duration": "30 sec", "sets": 4}
+                'name': 'Zen Master Flow',
+                'description': "Black Widow's flexibility and balance routine",
+                'difficulty': 'beginner',
+                'exercises': [
+                    {'name': 'Sun Salutations', 'reps': 10, 'sets': 3},
+                    {'name': 'Warrior Poses', 'duration': '1 min each', 'sets': 3},
+                    {'name': 'Tree Pose', 'duration': '1 min', 'sets': 3},
+                    {'name': 'Cobra Stretch', 'duration': '30 sec', 'sets': 4},
                 ],
-                "fitness_level": "beginner",
-                "category": "yoga"
             },
             {
-                "name": "Dark Knight Conditioning",
-                "description": "Batman's stealth and agility training",
-                "difficulty": "advanced",
-                "duration_minutes": 50,
-                "exercises": [
-                    {"name": "Parkour Drills", "duration": "10 min", "sets": 1},
-                    {"name": "Rope Climbing", "reps": 10, "sets": 3},
-                    {"name": "Handstand Push-ups", "reps": 15, "sets": 3},
-                    {"name": "Ninja Rolls", "reps": 20, "sets": 4}
+                'name': 'Dark Knight Conditioning',
+                'description': "Batman's stealth and agility training",
+                'difficulty': 'advanced',
+                'exercises': [
+                    {'name': 'Parkour Drills', 'duration': '10 min', 'sets': 1},
+                    {'name': 'Rope Climbing', 'reps': 10, 'sets': 3},
+                    {'name': 'Handstand Push-ups', 'reps': 15, 'sets': 3},
+                    {'name': 'Ninja Rolls', 'reps': 20, 'sets': 4},
                 ],
-                "fitness_level": "advanced",
-                "category": "strength_training"
             },
             {
-                "name": "Arc Reactor Cardio",
-                "description": "Iron Man's heart-healthy workout",
-                "difficulty": "intermediate",
-                "duration_minutes": 35,
-                "exercises": [
-                    {"name": "Cycling", "duration": "20 min", "sets": 1},
-                    {"name": "Jumping Jacks", "reps": 50, "sets": 3},
-                    {"name": "Step-ups", "reps": 30, "sets": 4}
+                'name': 'Arc Reactor Cardio',
+                'description': "Iron Man's heart-healthy workout",
+                'difficulty': 'intermediate',
+                'exercises': [
+                    {'name': 'Cycling', 'duration': '20 min', 'sets': 1},
+                    {'name': 'Jumping Jacks', 'reps': 50, 'sets': 3},
+                    {'name': 'Step-ups', 'reps': 30, 'sets': 4},
                 ],
-                "fitness_level": "intermediate",
-                "category": "cycling"
-            }
+            },
         ]
-        
-        db.workouts.insert_many(workouts_data)
+
+        for w_id, w in enumerate(workouts_data, start=1):
+            Workout.objects.create(
+                id=w_id,
+                name=w['name'],
+                description=w['description'],
+                difficulty=w['difficulty'],
+                exercises=w['exercises'],
+            )
         self.stdout.write(self.style.SUCCESS(f'Inserted {len(workouts_data)} workout suggestions'))
-        
-        # Verify collections
-        self.stdout.write('\n' + '='*50)
+
+        # Summary
+        self.stdout.write('\n' + '=' * 50)
         self.stdout.write(self.style.SUCCESS('DATABASE POPULATION COMPLETE!'))
-        self.stdout.write('='*50 + '\n')
-        
+        self.stdout.write('=' * 50 + '\n')
         self.stdout.write('Collection counts:')
-        self.stdout.write(f'  Users: {db.users.count_documents({})}')
-        self.stdout.write(f'  Teams: {db.teams.count_documents({})}')
-        self.stdout.write(f'  Activities: {db.activities.count_documents({})}')
-        self.stdout.write(f'  Leaderboard: {db.leaderboard.count_documents({})}')
-        self.stdout.write(f'  Workouts: {db.workouts.count_documents({})}')
-        
-        client.close()
-        self.stdout.write(self.style.SUCCESS('\nDatabase connection closed'))
+        self.stdout.write(f'  Users: {User.objects.count()}')
+        self.stdout.write(f'  Teams: {Team.objects.count()}')
+        self.stdout.write(f'  Activities: {Activity.objects.count()}')
+        self.stdout.write(f'  Leaderboard: {Leaderboard.objects.count()}')
+        self.stdout.write(f'  Workouts: {Workout.objects.count()}')
+
