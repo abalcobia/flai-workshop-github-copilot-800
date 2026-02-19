@@ -27,8 +27,20 @@ SECRET_KEY = 'django-insecure-+f4wasf#1nu#o-pe6c0vw_hl+$0kc6-#et&+&-we8j@pw)4rab
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-if os.environ.get('CODESPACE_NAME'):
-    ALLOWED_HOSTS.append(f"{os.environ.get('CODESPACE_NAME')}-8000.app.github.dev")
+
+codespace_name = os.environ.get('CODESPACE_NAME')
+if codespace_name:
+    ALLOWED_HOSTS.append(f"{codespace_name}-8000.app.github.dev")
+
+# Trust the HTTPS Codespace URL for CSRF
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000']
+if codespace_name:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{codespace_name}-8000.app.github.dev")
+
+# Allow Django to honour the X-Forwarded-* headers set by the Codespaces proxy
+# so that request.build_absolute_uri() returns the correct HTTPS URL
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 
 # Application definition
