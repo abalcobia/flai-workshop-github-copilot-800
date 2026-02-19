@@ -1,0 +1,274 @@
+/* ============================================================
+   OctoFit Tracker – Global Styles
+   ============================================================ */
+
+/* --- CSS variables for the colour palette --- */
+:root {
+  --octo-primary:   #1a73e8;   /* vivid blue  */
+  --octo-secondary: #0d47a1;   /* deep blue   */
+  --octo-accent:    #00c853;   /* energetic green */
+  --octo-bg:        #f0f4ff;   /* soft blue-white page background */
+  --octo-surface:   #ffffff;   /* card / table surface */
+  --octo-text:      #1e2a3a;   /* dark navy text */
+  --octo-muted:     #5c6e84;   /* secondary / muted text */
+  --octo-border:    #c5d3e8;   /* subtle border */
+  --octo-danger:    #d32f2f;
+  --octo-warning:   #f57c00;
+  --octo-gold:      #ffd600;
+  --nav-bg:         #0d1b2e;   /* near-black navy navbar */
+  --nav-height:     64px;
+}
+
+/* --- Page background & base typography --- */
+body {
+  background-color: var(--octo-bg);
+  color: var(--octo-text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* --- Navigation bar --- */
+.navbar {
+  background-color: var(--nav-bg) !important;
+  min-height: var(--nav-height);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  padding: 0 1.5rem;
+}
+
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ffffff !important;
+  letter-spacing: 0.5px;
+}
+
+.octofit-nav-logo {
+  height: 36px;
+  width: auto;
+  border-radius: 6px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.navbar .nav-link {
+  color: #b0c4de !important;
+  font-weight: 500;
+  padding: 0.5rem 1rem !important;
+  border-radius: 6px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.navbar .nav-link:hover,
+.navbar .nav-link.active {
+  background-color: var(--octo-primary);
+  color: #ffffff !important;
+}
+
+/* --- Main content area --- */
+main {
+  min-height: calc(100vh - var(--nav-height));
+  padding-bottom: 3rem;
+}
+
+/* --- Headings --- */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--octo-secondary);
+  font-weight: 700;
+}
+
+h1 { font-size: 2rem;   border-bottom: 3px solid var(--octo-primary); padding-bottom: 0.35rem; }
+h2 { font-size: 1.6rem; border-bottom: 2px solid var(--octo-accent);  padding-bottom: 0.25rem; }
+h3 { font-size: 1.3rem; }
+
+/* --- Links --- */
+a {
+  color: var(--octo-primary);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+a:hover {
+  color: var(--octo-accent);
+  text-decoration: underline;
+}
+
+/* --- Cards / containers --- */
+.container.mt-4 {
+  background: var(--octo-surface);
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  box-shadow: 0 2px 16px rgba(26, 115, 232, 0.08);
+  margin-top: 2rem !important;
+  margin-bottom: 2rem;
+}
+
+/* --- Tables --- */
+.table {
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.07);
+}
+
+.table thead th {
+  background-color: var(--octo-secondary) !important;
+  color: #ffffff !important;
+  border-color: var(--octo-secondary) !important;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  padding: 0.85rem 1rem;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+  background-color: #e8f0fe;
+}
+
+.table-striped > tbody > tr:nth-of-type(even) > * {
+  background-color: var(--octo-surface);
+}
+
+.table tbody tr:hover > td {
+  background-color: #c3d9fd !important;
+  transition: background-color 0.15s;
+}
+
+.table td, .table th {
+  vertical-align: middle;
+  padding: 0.75rem 1rem;
+  border-color: var(--octo-border);
+}
+
+/* Leaderboard rank badge colours */
+.table tbody tr:first-child td:first-child  { color: var(--octo-gold);   font-weight: 800; font-size: 1.1rem; }
+.table tbody tr:nth-child(2) td:first-child { color: var(--octo-muted);  font-weight: 700; }
+.table tbody tr:nth-child(3) td:first-child { color: var(--octo-warning);font-weight: 700; }
+
+/* --- Buttons --- */
+.btn-primary {
+  background-color: var(--octo-primary) !important;
+  border-color: var(--octo-primary) !important;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 0.45rem 1.2rem;
+  transition: transform 0.1s, box-shadow 0.15s;
+}
+.btn-primary:hover {
+  background-color: var(--octo-secondary) !important;
+  border-color: var(--octo-secondary) !important;
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background-color: var(--octo-accent) !important;
+  border-color: var(--octo-accent) !important;
+  color: #fff !important;
+  font-weight: 600;
+  border-radius: 8px;
+}
+.btn-success:hover {
+  filter: brightness(0.9);
+}
+
+.btn-danger {
+  background-color: var(--octo-danger) !important;
+  border-color: var(--octo-danger) !important;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.btn-secondary {
+  background-color: var(--octo-muted) !important;
+  border-color: var(--octo-muted) !important;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+.btn-warning {
+  background-color: var(--octo-warning) !important;
+  border-color: var(--octo-warning) !important;
+  color: #fff !important;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+/* --- Alerts / badges --- */
+.alert-danger {
+  background-color: #fdecea;
+  border-color: var(--octo-danger);
+  color: var(--octo-danger);
+  border-radius: 10px;
+}
+
+.badge.bg-primary   { background-color: var(--octo-primary)   !important; }
+.badge.bg-success   { background-color: var(--octo-accent)    !important; }
+
+/* --- Welcome hero section --- */
+.octofit-hero {
+  background: linear-gradient(135deg, var(--octo-secondary) 0%, var(--octo-primary) 100%);
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 3rem 2.5rem;
+  margin-top: 2rem;
+  box-shadow: 0 4px 20px rgba(26, 115, 232, 0.25);
+}
+
+.octofit-hero h1 {
+  color: #ffffff;
+  border-bottom-color: rgba(255,255,255,0.4);
+}
+
+.octofit-hero .lead {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.1rem;
+}
+
+/* --- Spinner --- */
+.spinner-border {
+  color: var(--octo-primary) !important;
+  width: 3rem;
+  height: 3rem;
+}
+
+/* --- Form controls --- */
+.form-control:focus {
+  border-color: var(--octo-primary);
+  box-shadow: 0 0 0 0.2rem rgba(26, 115, 232, 0.25);
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--octo-secondary);
+}
+
+/* --- Modal --- */
+.modal-header {
+  background-color: var(--octo-secondary);
+  color: #ffffff;
+  border-bottom: none;
+}
+
+.modal-header .btn-close {
+  filter: invert(1);
+}
+
+.modal-title {
+  font-weight: 700;
+}
+
+.modal-footer {
+  background-color: #f0f4ff;
+  border-top: 1px solid var(--octo-border);
+}
+
+/* --- Legacy App classes (kept for compatibility) --- */
+.App {
+  text-align: left;
+}
+
+.App-link {
+  color: var(--octo-primary);
+}
+
